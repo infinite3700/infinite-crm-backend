@@ -14,7 +14,7 @@ servers:
     description: Development server (local)
   - url: http://127.0.0.1:3000/api
     description: Development server (localhost alternative)
-  - url: https://infinite-backend-six.vercel.app/api
+  - url: https://infinite-crm-backend.vercel.app/api
     description: Production server  
 
 tags:
