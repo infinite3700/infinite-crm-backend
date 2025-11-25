@@ -1,0 +1,2330 @@
+openapi: 3.0.3
+info:
+  title: Infinite Backend API
+  description: |
+    API documentation for Infinite Backend application including authentication, 
+    user management, tasks, campaigns, products, permissions, roles, and state management.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@infinite-backend.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server (local)
+  - url: http://127.0.0.1:3000/api
+    description: Development server (localhost alternative)
+  - url: https://infinite-backend-six.vercel.app/api
+    description: Production server  
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Tasks
+    description: Task management endpoints
+  - name: Leads
+    description: Lead management endpoints
+  - name: Campaigns
+    description: Campaign management endpoints
+  - name: Products
+    description: Product and product category management
+  - name: Permissions
+    description: Permission management endpoints
+  - name: Roles
+    description: Role management endpoints
+  - name: States
+    description: State, district, and city management
+  - name: Lead Stages
+    description: Lead stage management
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message"
+        success:
+          type: boolean
+          example: false
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        name:
+          type: string
+          example: "John Doe"
+        username:
+          type: string
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        mobile:
+          type: string
+          example: "+1234567890"
+        role:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            description:
+              type: string
+            permissions:
+              type: array
+              items:
+                type: string
+        joinDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Task:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+          example: "Complete project documentation"
+        description:
+          type: string
+          example: "Write comprehensive API documentation"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          example: "high"
+        status:
+          type: string
+          enum: [pending, in-progress, completed]
+          example: "in-progress"
+        user:
+          type: string
+          description: User ID reference
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Campaign:
+      type: object
+      properties:
+        _id:
+          type: string
+        campaignName:
+          type: string
+          example: "Summer Sale 2025"
+        campaignDescription:
+          type: string
+          example: "Annual summer sale campaign with special offers"
+        campaignStartDate:
+          type: string
+          format: date
+          example: "2025-06-01"
+        campaignEndDate:
+          type: string
+          format: date
+          example: "2025-08-31"
+        status:
+          type: string
+          enum: [active, inactive, deleted]
+          example: "active"
+        createdBy:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+            email:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+          example: "Premium Widget"
+        sku:
+          type: number
+          example: 12345
+        unitPrice:
+          type: number
+          example: 99.99
+        status:
+          type: boolean
+          example: true
+        category:
+          type: object
+          properties:
+            _id:
+              type: string
+            category:
+              type: string
+            status:
+              type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProductCategory:
+      type: object
+      properties:
+        _id:
+          type: string
+        category:
+          type: string
+          example: "Electronics"
+        status:
+          type: boolean
+          example: true
+
+    Permission:
+      type: object
+      properties:
+        _id:
+          type: string
+        key:
+          type: string
+          example: "user.create"
+        description:
+          type: string
+          example: "Permission to create users"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Role:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+          example: "Admin"
+        description:
+          type: string
+          example: "Administrator role with full access"
+        permission:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+        status:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    State:
+      type: object
+      properties:
+        _id:
+          type: string
+        state:
+          type: string
+          example: "Uttarakhand"
+        district:
+          type: string
+          example: "Dehradun"
+        city:
+          type: string
+          example: "Dehradun City"
+        status:
+          type: boolean
+          example: true
+
+    LeadStage:
+      type: object
+      properties:
+        _id:
+          type: string
+        stage:
+          type: string
+          example: "Qualified"
+        status:
+          type: boolean
+          example: true
+
+    Lead:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        companyName:
+          type: string
+          example: "Tech Corp Inc"
+        state:
+          type: string
+          example: "Uttarakhand"
+        city:
+          type: string
+          example: "Dehradun"
+        district:
+          type: string
+          example: "Dehradun"
+        contactName:
+          type: string
+          example: "Rajesh Kumar"
+        contactMobile:
+          type: string
+          example: "+919876543210"
+        stage:
+          type: object
+          properties:
+            _id:
+              type: string
+            stage:
+              type: string
+            status:
+              type: boolean
+        productRequirement:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            sku:
+              type: number
+            unitPrice:
+              type: number
+        nextCallDate:
+          type: string
+          format: date-time
+          nullable: true
+        currentStatus:
+          type: string
+          example: "Follow up pending"
+        assignTo:
+          type: object
+          nullable: true
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+            email:
+              type: string
+        contributor:
+          type: array
+          items:
+            type: object
+            properties:
+              _id:
+                type: string
+              name:
+                type: string
+              username:
+                type: string
+              email:
+                type: string
+        leadOwner:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+            email:
+              type: string
+        campaignId:
+          type: object
+          nullable: true
+          properties:
+            _id:
+              type: string
+            campaignName:
+              type: string
+            campaignDescription:
+              type: string
+            status:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - username
+                - email
+                - mobile
+                - password
+                - role
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                username:
+                  type: string
+                  example: "johndoe"
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                mobile:
+                  type: string
+                  example: "+1234567890"
+                password:
+                  type: string
+                  format: password
+                  example: "SecurePass123!"
+                role:
+                  type: string
+                  description: Role ID
+                  example: "507f1f77bcf86cd799439011"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  name:
+                    type: string
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  mobile:
+                    type: string
+                  role:
+                    type: string
+                  joinDate:
+                    type: string
+                    format: date-time
+        '400':
+          description: Validation error or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user and receive JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - login
+                - password
+              properties:
+                login:
+                  type: string
+                  description: Email, username, or mobile number
+                  example: "john@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "SecurePass123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  name:
+                    type: string
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  mobile:
+                    type: string
+                  joinDate:
+                    type: string
+                    format: date-time
+                  role:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      permissions:
+                        type: array
+                        items:
+                          type: string
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Missing credentials
+        '401':
+          description: Invalid credentials
+
+  # ==================== USERS ====================
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      description: Retrieve all users with pagination and search
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, username, email, or mobile
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                      totalPages:
+                        type: integer
+                      totalUsers:
+                        type: integer
+                      hasNextPage:
+                        type: boolean
+                      hasPrevPage:
+                        type: boolean
+        '401':
+          description: Unauthorized
+
+  /users/profile:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Get the profile of the authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Retrieve a specific user by their ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Update user information
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                mobile:
+                  type: string
+                role:
+                  type: string
+                  description: Role ID
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      description: Delete a user by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+
+  # ==================== TASKS ====================
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Get all tasks
+      description: Retrieve tasks for the authenticated user with pagination
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  total:
+                    type: integer
+        '401':
+          description: Unauthorized
+
+    post:
+      tags:
+        - Tasks
+      summary: Create a new task
+      description: Create a new task for the authenticated user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - priority
+                - status
+              properties:
+                title:
+                  type: string
+                  example: "Complete documentation"
+                description:
+                  type: string
+                  example: "Write API documentation"
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                  example: "high"
+                status:
+                  type: string
+                  enum: [pending, in-progress, completed]
+                  example: "pending"
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+
+  /tasks/filter:
+    get:
+      tags:
+        - Tasks
+      summary: Get filtered tasks
+      description: Retrieve tasks with filters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in-progress, completed]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - name: title
+          in: query
+          schema:
+            type: string
+          description: Search by title (partial match)
+      responses:
+        '200':
+          description: Filtered tasks retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized
+
+  /tasks/{id}:
+    put:
+      tags:
+        - Tasks
+      summary: Update task
+      description: Update a specific task
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                status:
+                  type: string
+                  enum: [pending, in-progress, completed]
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Task not found
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete task
+      description: Delete a specific task
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Task deleted successfully"
+        '401':
+          description: Unauthorized
+        '404':
+          description: Task not found
+
+  # ==================== CAMPAIGNS ====================
+  /settings/campaigns:
+    get:
+      tags:
+        - Campaigns
+      summary: Get all campaigns
+      description: Retrieve campaigns with optional filters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: campaignName
+          in: query
+          schema:
+            type: string
+          description: Filter by campaign name (partial match, case-insensitive)
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, deleted]
+        - name: createdBy
+          in: query
+          schema:
+            type: string
+          description: Filter by creator user ID
+        - name: campaignStartDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by exact start date
+        - name: campaignEndDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by exact end date
+        - name: startDateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter campaigns starting from this date
+        - name: startDateTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter campaigns starting before this date
+        - name: endDateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter campaigns ending from this date
+        - name: endDateTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter campaigns ending before this date
+      responses:
+        '200':
+          description: Campaigns retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Campaign'
+        '401':
+          description: Unauthorized
+
+    post:
+      tags:
+        - Campaigns
+      summary: Create a new campaign
+      description: Create a new campaign
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - campaignName
+                - campaignDescription
+                - campaignStartDate
+                - campaignEndDate
+              properties:
+                campaignName:
+                  type: string
+                  example: "Summer Sale 2025"
+                campaignDescription:
+                  type: string
+                  example: "Annual summer sale with 50% off"
+                campaignStartDate:
+                  type: string
+                  format: date
+                  example: "2025-06-01"
+                campaignEndDate:
+                  type: string
+                  format: date
+                  example: "2025-08-31"
+                status:
+                  type: string
+                  enum: [active, inactive, deleted]
+                  default: active
+                  description: Campaign status (optional, defaults to 'active')
+      responses:
+        '201':
+          description: Campaign created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+
+  /settings/campaigns/{id}:
+    get:
+      tags:
+        - Campaigns
+      summary: Get campaign by ID
+      description: Retrieve a specific campaign
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Campaign retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Campaign not found
+
+    put:
+      tags:
+        - Campaigns
+      summary: Update campaign
+      description: Update a specific campaign
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                campaignName:
+                  type: string
+                campaignDescription:
+                  type: string
+                campaignStartDate:
+                  type: string
+                  format: date
+                campaignEndDate:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum: [active, inactive, deleted]
+      responses:
+        '200':
+          description: Campaign updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '404':
+          description: Campaign not found
+
+    delete:
+      tags:
+        - Campaigns
+      summary: Soft delete campaign
+      description: Set campaign status to 'deleted'
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Campaign deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  campaign:
+                    $ref: '#/components/schemas/Campaign'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Campaign not found
+
+  /settings/campaigns/{id}/hard:
+    delete:
+      tags:
+        - Campaigns
+      summary: Hard delete campaign
+      description: Permanently delete campaign from database
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Campaign permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  campaign:
+                    $ref: '#/components/schemas/Campaign'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Campaign not found
+
+  # ==================== PRODUCTS ====================
+  /settings/products/category:
+    get:
+      tags:
+        - Products
+      summary: Get all product categories
+      description: Retrieve all product categories
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductCategory'
+
+    post:
+      tags:
+        - Products
+      summary: Create or update product category
+      description: Create new category or update existing one
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - category
+              properties:
+                _id:
+                  type: string
+                  description: Optional - if provided, updates existing category
+                category:
+                  type: string
+                status:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Category created/updated successfully
+        '400':
+          description: Validation error
+
+  /settings/products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Retrieve products with optional filters
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Search by product name
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category ID
+        - name: status
+          in: query
+          schema:
+            type: boolean
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+    post:
+      tags:
+        - Products
+      summary: Create a new product
+      description: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - unitPrice
+                - category
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: number
+                  default: 0
+                unitPrice:
+                  type: number
+                category:
+                  type: string
+                  description: Category ID
+                status:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Validation error
+
+  /settings/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Retrieve a specific product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: Update a specific product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                sku:
+                  type: number
+                unitPrice:
+                  type: number
+                category:
+                  type: string
+                status:
+                  type: boolean
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: Delete a specific product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product deleted successfully
+        '404':
+          description: Product not found
+
+  # ==================== PERMISSIONS ====================
+  /settings/permissions:
+    get:
+      tags:
+        - Permissions
+      summary: Get all permissions
+      description: Retrieve all permissions
+      responses:
+        '200':
+          description: Permissions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Permission'
+
+    post:
+      tags:
+        - Permissions
+      summary: Create a new permission
+      description: Create a new permission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+                - description
+              properties:
+                key:
+                  type: string
+                  example: "user.create"
+                description:
+                  type: string
+                  example: "Permission to create users"
+      responses:
+        '201':
+          description: Permission created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Permission'
+        '400':
+          description: Validation error
+
+  /settings/permissions/{id}:
+    get:
+      tags:
+        - Permissions
+      summary: Get permission by ID
+      description: Retrieve a specific permission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Permission retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Permission'
+        '404':
+          description: Permission not found
+
+    put:
+      tags:
+        - Permissions
+      summary: Update permission
+      description: Update a specific permission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+                - description
+              properties:
+                key:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Permission updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Permission'
+        '400':
+          description: Validation error
+        '404':
+          description: Permission not found
+
+    delete:
+      tags:
+        - Permissions
+      summary: Delete permission
+      description: Delete a specific permission (if not used in roles)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Permission deleted successfully
+        '400':
+          description: Permission is being used in roles
+        '404':
+          description: Permission not found
+
+  # ==================== ROLES ====================
+  /settings/roles:
+    get:
+      tags:
+        - Roles
+      summary: Get all roles
+      description: Retrieve all roles with populated permissions
+      responses:
+        '200':
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+
+    post:
+      tags:
+        - Roles
+      summary: Create a new role
+      description: Create a new role with permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  example: "Manager"
+                description:
+                  type: string
+                  example: "Manager role with limited permissions"
+                permission:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of permission IDs
+                status:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Role'
+        '400':
+          description: Validation error
+
+  /settings/roles/{id}:
+    get:
+      tags:
+        - Roles
+      summary: Get role by ID
+      description: Retrieve a specific role with populated permissions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Role'
+        '404':
+          description: Role not found
+
+    put:
+      tags:
+        - Roles
+      summary: Update role
+      description: Update a specific role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                permission:
+                  type: array
+                  items:
+                    type: string
+                status:
+                  type: boolean
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Role'
+        '400':
+          description: Validation error
+        '404':
+          description: Role not found
+
+    delete:
+      tags:
+        - Roles
+      summary: Delete role
+      description: Delete a specific role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role deleted successfully
+        '404':
+          description: Role not found
+
+  /settings/roles/{id}/toggle-status:
+    patch:
+      tags:
+        - Roles
+      summary: Toggle role status
+      description: Toggle role active/inactive status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Role'
+        '404':
+          description: Role not found
+
+  # ==================== STATES ====================
+  /settings/state:
+    get:
+      tags:
+        - States
+      summary: Get states/districts/cities
+      description: Retrieve states, districts, or cities based on query parameters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by state name or 'all'
+        - name: district
+          in: query
+          schema:
+            type: string
+          description: Filter by district or 'all'
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: Filter by city
+      responses:
+        '200':
+          description: Data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/State'
+        '401':
+          description: Unauthorized
+
+    post:
+      tags:
+        - States
+      summary: Create state/district/city
+      description: Create or update state, district, and city
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - state
+                - district
+                - city
+              properties:
+                state:
+                  type: string
+                district:
+                  type: string
+                city:
+                  type: string
+      responses:
+        '200':
+          description: State created/updated successfully
+        '401':
+          description: Unauthorized
+
+  /settings/state/{state}:
+    post:
+      tags:
+        - States
+      summary: Update state and status
+      description: Update state name and status for all records with given state
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: state
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                state:
+                  type: string
+                  description: New state name
+                status:
+                  type: boolean
+      responses:
+        '200':
+          description: State updated successfully
+        '400':
+          description: Status must be boolean
+        '401':
+          description: Unauthorized
+
+  /settings/state/{_id}:
+    put:
+      tags:
+        - States
+      summary: Update state by ID
+      description: Update a specific state/district/city record
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: _id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                district:
+                  type: string
+                city:
+                  type: string
+                status:
+                  type: boolean
+      responses:
+        '200':
+          description: State updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/State'
+        '401':
+          description: Unauthorized
+
+  /settings/district-enums/{state}:
+    get:
+      tags:
+        - States
+      summary: Get districts by state
+      description: Get list of districts for a specific state
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: state
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Uttarakhand, Uttar Pradesh, all]
+      responses:
+        '200':
+          description: Districts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  districts:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Unauthorized
+
+  /settings/state-enums:
+    get:
+      tags:
+        - States
+      summary: Get state enums
+      description: Get list of all available states
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: States retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Unauthorized
+
+  # ==================== LEADS ====================
+  /leads:
+    get:
+      tags:
+        - Leads
+      summary: Get all leads
+      description: Retrieve all leads with optional filters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: companyName
+          in: query
+          schema:
+            type: string
+          description: Filter by company name
+        - name: contactName
+          in: query
+          schema:
+            type: string
+          description: Filter by contact name
+        - name: contactMobile
+          in: query
+          schema:
+            type: string
+          description: Filter by contact mobile
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by state
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: Filter by city
+        - name: district
+          in: query
+          schema:
+            type: string
+          description: Filter by district
+        - name: stage
+          in: query
+          schema:
+            type: string
+          description: Filter by lead stage ID
+        - name: productRequirement
+          in: query
+          schema:
+            type: string
+          description: Filter by product requirement ID
+        - name: currentStatus
+          in: query
+          schema:
+            type: string
+          description: Filter by current status
+        - name: assignTo
+          in: query
+          schema:
+            type: string
+          description: Filter by assigned user ID
+        - name: leadOwner
+          in: query
+          schema:
+            type: string
+          description: Filter by lead owner ID
+        - name: nextCallDateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by next call date (from)
+        - name: nextCallDateTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by next call date (to)
+        - name: campaignId
+          in: query
+          schema:
+            type: string
+          description: Filter by campaign ID
+      responses:
+        '200':
+          description: Leads retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lead'
+        '401':
+          description: Unauthorized
+
+    post:
+      tags:
+        - Leads
+      summary: Create a new lead
+      description: Create a new lead. Lead owner is automatically set to the logged-in user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contactMobile
+                - campaignId
+                - assignTo
+              properties:
+                companyName:
+                  type: string
+                  example: "Tech Corp Inc"
+                state:
+                  type: string
+                  example: "Uttarakhand"
+                city:
+                  type: string
+                  example: "Dehradun"
+                district:
+                  type: string
+                  example: "Dehradun"
+                contactName:
+                  type: string
+                  example: "Rajesh Kumar"
+                contactMobile:
+                  type: string
+                  example: "+919876543210"
+                stage:
+                  type: string
+                  example: "507f1f77bcf86cd799439011"
+                  description: Lead stage ID
+                productRequirement:
+                  type: string
+                  example: "507f1f77bcf86cd799439012"
+                  description: Product ID
+                nextCallDate:
+                  type: string
+                  format: date-time
+                currentStatus:
+                  type: string
+                  example: "Follow up pending"
+                assignTo:
+                  type: string
+                  description: User ID to assign the lead to (required)
+                contributor:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs
+                campaignId:
+                  type: string
+                  description: Campaign ID to associate with the lead
+      responses:
+        '201':
+          description: Lead created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+
+  /leads/my-leads:
+    get:
+      tags:
+        - Leads
+      summary: Get my leads
+      description: Retrieve all leads owned by or assigned to the logged-in user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: My leads retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lead'
+        '401':
+          description: Unauthorized
+
+  /leads/assigned:
+    get:
+      tags:
+        - Leads
+      summary: Get assigned leads
+      description: Retrieve all leads assigned to the logged-in user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Assigned leads retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lead'
+        '401':
+          description: Unauthorized
+
+  /leads/follow-up:
+    get:
+      tags:
+        - Leads
+      summary: Get follow-up leads
+      description: Retrieve all leads assigned to the logged-in user with follow-up date from today onwards
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Follow-up leads retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lead'
+        '401':
+          description: Unauthorized
+
+  /leads/count:
+    get:
+      tags:
+        - Leads
+      summary: Get leads count
+      description: Get the total count of assigned leads and follow-up leads for the logged-in user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Leads count retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  assignedCount:
+                    type: number
+                    example: 25
+                    description: Total number of leads assigned to the user
+                  followUpCount:
+                    type: number
+                    example: 10
+                    description: Number of leads with follow-up dates from today onwards
+        '401':
+          description: Unauthorized
+
+  /leads/{id}:
+    get:
+      tags:
+        - Leads
+      summary: Get lead by ID
+      description: Retrieve a specific lead by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lead retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+        '404':
+          description: Lead not found
+        '401':
+          description: Unauthorized
+
+    put:
+      tags:
+        - Leads
+      summary: Update lead
+      description: Update an existing lead
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyName:
+                  type: string
+                state:
+                  type: string
+                city:
+                  type: string
+                district:
+                  type: string
+                contactName:
+                  type: string
+                contactMobile:
+                  type: string
+                stage:
+                  type: string
+                  description: Lead stage ID
+                productRequirement:
+                  type: string
+                  description: Product ID
+                nextCallDate:
+                  type: string
+                  format: date-time
+                currentStatus:
+                  type: string
+                assignTo:
+                  type: string
+                  description: User ID
+                contributor:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs
+                campaignId:
+                  type: string
+                  description: Campaign ID to associate with the lead
+      responses:
+        '200':
+          description: Lead updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+        '404':
+          description: Lead not found
+        '401':
+          description: Unauthorized
+
+    delete:
+      tags:
+        - Leads
+      summary: Delete lead
+      description: Delete a lead by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lead deleted successfully
+        '404':
+          description: Lead not found
+        '401':
+          description: Unauthorized
+
+  # ==================== LEAD STAGES ====================
+  /settings/lead-stages:
+    get:
+      tags:
+        - Lead Stages
+      summary: Get all lead stages
+      description: Retrieve all lead stages with optional filters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: boolean
+        - name: stage
+          in: query
+          schema:
+            type: string
+          description: Search by stage name
+      responses:
+        '200':
+          description: Lead stages retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeadStage'
+        '401':
+          description: Unauthorized
+
+    post:
+      tags:
+        - Lead Stages
+      summary: Create or update lead stage
+      description: Create new lead stage or update existing one
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stage
+              properties:
+                stage:
+                  type: string
+                status:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Lead stage created/updated successfully
+        '400':
+          description: Stage is required
+        '401':
+          description: Unauthorized
