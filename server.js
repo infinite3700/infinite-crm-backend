@@ -22,7 +22,7 @@ let NODE_ENV = process.env.NODE_ENV
 
 if (NODE_ENV === 'production') {
   // Load production environment variables and override any existing ones
-  dotenv.config({ path: '.env.production', override: true })
+  dotenv.config({ path: '.env', override: true })
   console.info('Loading production environment variables from .env.production')
 } else {
   // Load development environment variables (default)
