@@ -374,7 +374,7 @@ export const getLeadsCount = expressAsyncHandler(async (req, res) => {
     const assignedCount = await Lead.countDocuments({ assignTo: req.user._id })
     const followUpCount = await Lead.countDocuments({
       assignTo: req.user._id,
-      nextCallDate: { $gte: today }
+      nextCallDate: { $lte: today }
     })
 
     res.status(200).json({ assignedCount, followUpCount })
