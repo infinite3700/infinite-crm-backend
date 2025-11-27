@@ -343,7 +343,7 @@ export const getFollowUpLeads = expressAsyncHandler(async (req, res) => {
 
     const filter = {
       assignTo: req.user._id,
-      nextCallDate: { $gte: today }
+      nextCallDate: { $lte: today }
     }
 
     // Apply additional filters from query
