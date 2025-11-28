@@ -1,5 +1,6 @@
 import expressAsyncHandler from 'express-async-handler'
 import Lead from '../models/Leads.js'
+import { Product } from '../models/settings/Products.js'
 
 // Helper function to build filter
 const buildFilter = (query) => {
@@ -105,6 +106,9 @@ export const createLead = expressAsyncHandler(async (req, res) => {
       })
     }
 
+    // get product details
+    const getProduct = await Product.findById(productRequirement)
+
     // Create new lead with current logged-in user as lead owner
     const newLead = new Lead({
       companyName,
@@ -120,7 +124,8 @@ export const createLead = expressAsyncHandler(async (req, res) => {
       assignTo,
       contributor: contributor || [],
       leadOwner: req.user._id,
-      campaignId
+      campaignId,
+      products: getProduct
     })
 
     const savedLead = await newLead.save()
@@ -233,6 +238,9 @@ export const updateLead = expressAsyncHandler(async (req, res) => {
     }
     if (productRequirement !== undefined) {
       lead.productRequirement = productRequirement ? productRequirement : null
+      // get product details
+      const getProduct = await Product.findById(productRequirement)
+      lead.products = getProduct
     }
     if (nextCallDate !== undefined) {
       lead.nextCallDate = nextCallDate ? new Date(nextCallDate) : null

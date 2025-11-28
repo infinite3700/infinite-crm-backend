@@ -64,6 +64,10 @@ const leadsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Campaign',
     required: true
+  },
+  products:{
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   }
 }, {
   timestamps: true
