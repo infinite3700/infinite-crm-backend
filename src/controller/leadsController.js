@@ -53,7 +53,7 @@ const buildFilter = (query) => {
 
   // Filter by assigned to
   if (query.assignTo) {
-    filter.assignTo = query.assignTo
+    filter.assignTo = { $in: [query.assignTo] }
   }
 
   // Filter by lead owner
@@ -347,25 +347,154 @@ export const getAssignedLeads = expressAsyncHandler(async (req, res) => {
 export const getFollowUpLeads = expressAsyncHandler(async (req, res) => {
   try {
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const todayISO = today.toISOString().split('T')[0] + 'T23:59:59.999Z'
 
     const filter = {
       assignTo: req.user._id,
-      nextCallDate: { $lte: today }
+      nextCallDate: { $lte: new Date(todayISO) }
     }
 
     // Apply additional filters from query
     const queryFilter = buildFilter(req.query)
     Object.assign(filter, queryFilter)
-
-    const leads = await Lead.find(filter)
-      .populate('stage', 'stage status')
-      .populate('productRequirement', 'name sku unitPrice category')
-      .populate('assignTo', 'name username email')
-      .populate('contributor', 'name username email')
-      .populate('leadOwner', 'name username email')
-      .populate('campaignId', 'campaignName campaignDescription status')
-      .sort({ nextCallDate: 1, updatedAt: -1 })
+    const leads = await Lead.aggregate([
+      {
+        $match: filter
+      },
+      {
+        $lookup: {
+          from: 'leadstages',
+          localField: 'stage',
+          foreignField: '_id',
+          as: 'stageData'
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { stageData: { $size: 0 } }, // No stage assigned
+            {
+              'stageData.stage': {
+                $not: {
+                  $regex: /^(won|lost)$/i
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'productRequirement',
+          foreignField: '_id',
+          as: 'productData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'assignTo',
+          foreignField: '_id',
+          as: 'assignToData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'contributor',
+          foreignField: '_id',
+          as: 'contributorData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'leadOwner',
+          foreignField: '_id',
+          as: 'leadOwnerData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'campaigns',
+          localField: 'campaignId',
+          foreignField: '_id',
+          as: 'campaignData'
+        }
+      },
+      {
+        $addFields: {
+          stage: {
+            $cond: {
+              if: { $gt: [{ $size: '$stageData' }, 0] },
+              then: {
+                _id: { $arrayElemAt: ['$stageData._id', 0] },
+                stage: { $arrayElemAt: ['$stageData.stage', 0] },
+                status: { $arrayElemAt: ['$stageData.status', 0] }
+              },
+              else: null
+            }
+          },
+          productRequirement: {
+            $cond: {
+              if: { $gt: [{ $size: '$productData' }, 0] },
+              then: {
+                _id: { $arrayElemAt: ['$productData._id', 0] },
+                name: { $arrayElemAt: ['$productData.name', 0] },
+                sku: { $arrayElemAt: ['$productData.sku', 0] },
+                unitPrice: { $arrayElemAt: ['$productData.unitPrice', 0] },
+                category: { $arrayElemAt: ['$productData.category', 0] }
+              },
+              else: null
+            }
+          },
+          assignTo: {
+            _id: { $arrayElemAt: ['$assignToData._id', 0] },
+            name: { $arrayElemAt: ['$assignToData.name', 0] },
+            username: { $arrayElemAt: ['$assignToData.username', 0] },
+            email: { $arrayElemAt: ['$assignToData.email', 0] }
+          },
+          contributor: {
+            $map: {
+              input: '$contributorData',
+              as: 'contrib',
+              in: {
+                _id: '$$contrib._id',
+                name: '$$contrib.name',
+                username: '$$contrib.username',
+                email: '$$contrib.email'
+              }
+            }
+          },
+          leadOwner: {
+            _id: { $arrayElemAt: ['$leadOwnerData._id', 0] },
+            name: { $arrayElemAt: ['$leadOwnerData.name', 0] },
+            username: { $arrayElemAt: ['$leadOwnerData.username', 0] },
+            email: { $arrayElemAt: ['$leadOwnerData.email', 0] }
+          },
+          campaignId: {
+            _id: { $arrayElemAt: ['$campaignData._id', 0] },
+            campaignName: { $arrayElemAt: ['$campaignData.campaignName', 0] },
+            campaignDescription: { $arrayElemAt: ['$campaignData.campaignDescription', 0] },
+            status: { $arrayElemAt: ['$campaignData.status', 0] }
+          }
+        }
+      },
+      {
+        $project: {
+          stageData: 0,
+          productData: 0,
+          assignToData: 0,
+          contributorData: 0,
+          leadOwnerData: 0,
+          campaignData: 0
+        }
+      },
+      {
+        $sort: { nextCallDate: 1, updatedAt: -1 }
+      }
+    ])
 
     res.status(200).json(leads)
   } catch (error) {
@@ -377,12 +506,13 @@ export const getFollowUpLeads = expressAsyncHandler(async (req, res) => {
 export const getLeadsCount = expressAsyncHandler(async (req, res) => {
   try {
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const todayISO = today.toISOString().split('T')[0] + 'T23:59:59.999Z'
+
 
     const assignedCount = await Lead.countDocuments({ assignTo: req.user._id })
     const followUpCount = await Lead.countDocuments({
       assignTo: req.user._id,
-      nextCallDate: { $lte: today }
+      nextCallDate: { $lte: new Date(todayISO) }
     })
 
     res.status(200).json({ assignedCount, followUpCount })
