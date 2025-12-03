@@ -508,12 +508,45 @@ export const getLeadsCount = expressAsyncHandler(async (req, res) => {
     const today = new Date()
     const todayISO = today.toISOString().split('T')[0] + 'T23:59:59.999Z'
 
-
+    // Count all assigned leads (without stage filtering)
     const assignedCount = await Lead.countDocuments({ assignTo: req.user._id })
-    const followUpCount = await Lead.countDocuments({
-      assignTo: req.user._id,
-      nextCallDate: { $lte: new Date(todayISO) }
-    })
+
+    // Count follow-up leads (excluding won/lost stages)
+    const followUpCountResult = await Lead.aggregate([
+      {
+        $match: {
+          assignTo: req.user._id,
+          nextCallDate: { $lte: new Date(todayISO) }
+        }
+      },
+      {
+        $lookup: {
+          from: 'leadstages',
+          localField: 'stage',
+          foreignField: '_id',
+          as: 'stageData'
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { stageData: { $size: 0 } }, // No stage assigned
+            {
+              'stageData.stage': {
+                $not: {
+                  $regex: /^(won|lost)$/i
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        $count: 'count'
+      }
+    ])
+
+    const followUpCount = followUpCountResult.length > 0 ? followUpCountResult[0].count : 0
 
     res.status(200).json({ assignedCount, followUpCount })
   } catch (error) {
