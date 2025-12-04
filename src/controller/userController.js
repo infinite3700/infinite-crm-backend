@@ -191,7 +191,7 @@ export const updateUser = asyncHandler(async (req, res) => {
 // @access  Private
 export const getAllUsers = asyncHandler(async (req, res) => {
   try {
-    const { page = 1, limit = 10, search } = req.query
+    const { page = 1, limit = 100, search } = req.query
 
     const query = search
       ? {
