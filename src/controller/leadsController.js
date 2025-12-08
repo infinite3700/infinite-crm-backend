@@ -129,16 +129,16 @@ export const createLead = expressAsyncHandler(async (req, res) => {
     })
 
     const savedLead = await newLead.save()
-    await savedLead.populate([
-      { path: 'stage', select: 'stage status' },
-      { path: 'productRequirement', select: 'name sku unitPrice category' },
-      { path: 'assignTo', select: 'name username email' },
-      { path: 'contributor', select: 'name username email' },
-      { path: 'leadOwner', select: 'name username email' },
-      { path: 'campaignId', select: 'campaignName campaignDescription status' }
-    ])
+    const populatedLead = await Lead.findById(savedLead._id)
+      .populate('stage', 'stage status')
+      .populate('productRequirement', 'name sku unitPrice category')
+      .populate('assignTo', 'name username email')
+      .populate('contributor', 'name username email')
+      .populate('leadOwner', 'name username email')
+      .populate('campaignId', 'campaignName campaignDescription status')
+      .sort({ updatedAt: -1 })
 
-    res.status(201).json(savedLead)
+    res.status(201).json(populatedLead)
   } catch (error) {
     console.error(error.message)
     res.status(500).json({ error: error.message })
@@ -157,7 +157,7 @@ export const getLeads = expressAsyncHandler(async (req, res) => {
       .populate('contributor', 'name username email')
       .populate('leadOwner', 'name username email')
       .populate('campaignId', 'campaignName campaignDescription status')
-      .sort({ nextCallDate: 1, updatedAt: -1 })
+      .sort({ updatedAt: -1 })
 
     res.status(200).json(leads)
   } catch (error) {
@@ -311,7 +311,7 @@ export const getMyLeads = expressAsyncHandler(async (req, res) => {
       .populate('contributor', 'name username email')
       .populate('leadOwner', 'name username email')
       .populate('campaignId', 'campaignName campaignDescription status')
-      .sort({ nextCallDate: -1, updatedAt: -1 })
+      .sort({ updatedAt: -1 })
 
     res.status(200).json(leads)
   } catch (error) {
