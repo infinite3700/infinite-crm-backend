@@ -77,6 +77,28 @@ const buildFilter = (query) => {
     }
   }
 
+  // Filter by lead created date range (createdAt)
+  if (query.createdAtFrom || query.createdAtTo) {
+    filter.createdAt = {}
+    if (query.createdAtFrom) {
+      filter.createdAt.$gte = new Date(query.createdAtFrom)
+    }
+    if (query.createdAtTo) {
+      filter.createdAt.$lte = new Date(query.createdAtTo)
+    }
+  }
+
+  // Filter by lead last updated date range (updatedAt)
+  if (query.updatedAtFrom || query.updatedAtTo) {
+    filter.updatedAt = {}
+    if (query.updatedAtFrom) {
+      filter.updatedAt.$gte = new Date(query.updatedAtFrom)
+    }
+    if (query.updatedAtTo) {
+      filter.updatedAt.$lte = new Date(query.updatedAtTo)
+    }
+  }
+
   return filter
 }
 
@@ -300,20 +322,38 @@ export const getMyLeads = expressAsyncHandler(async (req, res) => {
       ]
     }
 
+    // Pagination
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const skip = (page - 1) * limit
+
     // Apply additional filters from query
     const queryFilter = buildFilter(req.query)
     Object.assign(filter, queryFilter)
 
-    const leads = await Lead.find(filter)
-      .populate('stage', 'stage status')
-      .populate('productRequirement', 'name sku unitPrice category')
-      .populate('assignTo', 'name username email')
-      .populate('contributor', 'name username email')
-      .populate('leadOwner', 'name username email')
-      .populate('campaignId', 'campaignName campaignDescription status')
-      .sort({ updatedAt: -1 })
+    const [leads, totalCount] = await Promise.all([
+      Lead.find(filter)
+        .populate('stage', 'stage status')
+        .populate('productRequirement', 'name sku unitPrice category')
+        .populate('assignTo', 'name username email')
+        .populate('contributor', 'name username email')
+        .populate('leadOwner', 'name username email')
+        .populate('campaignId', 'campaignName campaignDescription status')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Lead.countDocuments(filter)
+    ])
 
-    res.status(200).json(leads)
+    res.status(200).json({
+      leads,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount,
+        limit
+      }
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

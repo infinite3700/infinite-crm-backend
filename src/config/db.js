@@ -2,14 +2,19 @@ import mongoose from 'mongoose'
 mongoose.set('strictQuery', false)
 
 export const connectDB = async () => {
-  const dbUrl = process.env.MONGO_URI
+  let dbUrl = ''
+  if (process.env.NODE_ENV === 'development') {
+    dbUrl = process.env.MONGO_URI_DEV
+  } else {
+    dbUrl = process.env.MONGO_URI
+  }
   if (!dbUrl) {
     console.error('MongoDB URI (MONGO_URI) is not defined in environment variables.')
     process.exit(1)
   }
   try {
     console.info('🔄 Attempting to connect to MongoDB...')
-    console.info(`Environment: ${process.env.NODE_ENV || 'development'}`)
+    console.info(`Environment: ${process.env.NODE_ENV || 'development1'}`)
     console.info(`Connecting to database: ${dbUrl.includes('task_management_prod') ? 'Production DB' : 'Development DB'}`)
     const con = await mongoose.connect(dbUrl)
     console.info(`✅ MongoDB connected: ${con.connection.host}`)
