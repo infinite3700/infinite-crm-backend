@@ -1908,10 +1908,22 @@ paths:
       tags:
         - Leads
       summary: Get all leads
-      description: Retrieve all leads with optional filters
+      description: Retrieve all leads with optional filters and pagination
       security:
         - BearerAuth: []
       parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
         - name: companyName
           in: query
           schema:
@@ -2010,13 +2022,31 @@ paths:
           description: Filter by lead last updated date (to)
       responses:
         '200':
-          description: Leads retrieved successfully
+          description: Leads retrieved successfully with pagination
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Lead'
+                type: object
+                properties:
+                  leads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lead'
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                        example: 1
+                      totalPages:
+                        type: integer
+                        example: 5
+                      totalCount:
+                        type: integer
+                        example: 50
+                      limit:
+                        type: integer
+                        example: 10
         '401':
           description: Unauthorized
 
@@ -2235,18 +2265,135 @@ paths:
       tags:
         - Leads
       summary: Get assigned leads
-      description: Retrieve all leads assigned to the logged-in user
+      description: Retrieve all leads assigned to the logged-in user with pagination and filters
       security:
         - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - name: companyName
+          in: query
+          schema:
+            type: string
+          description: Filter by company name
+        - name: contactName
+          in: query
+          schema:
+            type: string
+          description: Filter by contact name
+        - name: contactMobile
+          in: query
+          schema:
+            type: string
+          description: Filter by contact mobile
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by state
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: Filter by city
+        - name: district
+          in: query
+          schema:
+            type: string
+          description: Filter by district
+        - name: stage
+          in: query
+          schema:
+            type: string
+          description: Filter by lead stage ID
+        - name: productRequirement
+          in: query
+          schema:
+            type: string
+          description: Filter by product requirement ID
+        - name: currentStatus
+          in: query
+          schema:
+            type: string
+          description: Filter by current status
+        - name: campaignId
+          in: query
+          schema:
+            type: string
+          description: Filter by campaign ID
+        - name: nextCallDateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by next call date (from)
+        - name: nextCallDateTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by next call date (to)
+        - name: createdAtFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead created date (from)
+        - name: createdAtTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead created date (to)
+        - name: updatedAtFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead last updated date (from)
+        - name: updatedAtTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead last updated date (to)
       responses:
         '200':
-          description: Assigned leads retrieved successfully
+          description: Assigned leads retrieved successfully with pagination
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Lead'
+                type: object
+                properties:
+                  leads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lead'
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                        example: 1
+                      totalPages:
+                        type: integer
+                        example: 5
+                      totalCount:
+                        type: integer
+                        example: 50
+                      limit:
+                        type: integer
+                        example: 10
         '401':
           description: Unauthorized
 
@@ -2255,18 +2402,123 @@ paths:
       tags:
         - Leads
       summary: Get follow-up leads
-      description: Retrieve all leads assigned to the logged-in user with follow-up date from today onwards
+      description: Retrieve all leads assigned to the logged-in user with follow-up date up to today (excluding won/lost stages) with pagination and filters
       security:
         - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - name: companyName
+          in: query
+          schema:
+            type: string
+          description: Filter by company name
+        - name: contactName
+          in: query
+          schema:
+            type: string
+          description: Filter by contact name
+        - name: contactMobile
+          in: query
+          schema:
+            type: string
+          description: Filter by contact mobile
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: Filter by state
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: Filter by city
+        - name: district
+          in: query
+          schema:
+            type: string
+          description: Filter by district
+        - name: stage
+          in: query
+          schema:
+            type: string
+          description: Filter by lead stage ID
+        - name: productRequirement
+          in: query
+          schema:
+            type: string
+          description: Filter by product requirement ID
+        - name: currentStatus
+          in: query
+          schema:
+            type: string
+          description: Filter by current status
+        - name: campaignId
+          in: query
+          schema:
+            type: string
+          description: Filter by campaign ID
+        - name: createdAtFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead created date (from)
+        - name: createdAtTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead created date (to)
+        - name: updatedAtFrom
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead last updated date (from)
+        - name: updatedAtTo
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by lead last updated date (to)
       responses:
         '200':
-          description: Follow-up leads retrieved successfully
+          description: Follow-up leads retrieved successfully with pagination
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Lead'
+                type: object
+                properties:
+                  leads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lead'
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                        example: 1
+                      totalPages:
+                        type: integer
+                        example: 5
+                      totalCount:
+                        type: integer
+                        example: 50
+                      limit:
+                        type: integer
+                        example: 10
         '401':
           description: Unauthorized
 
