@@ -21,13 +21,13 @@ const __dirname = dirname(__filename)
 let NODE_ENV = process.env.NODE_ENV
 
 if (NODE_ENV === 'production') {
-  // Load production environment variables and override any existing ones
+  // Load production environment variables
   dotenv.config({ path: '.env', override: true })
-  console.info('Loading production environment variables from .env.production')
+  console.info('Loading production environment variables from .env')
 } else {
   // Load development environment variables (default)
-  dotenv.config()
-  console.info('Loading development environment variables from .env')
+  dotenv.config({ path: '.env.development', override: true })
+  console.info('Loading development environment variables from .env.development')
 }
 
 // After loading dotenv, get NODE_ENV again (in case it was set in the .env file)
