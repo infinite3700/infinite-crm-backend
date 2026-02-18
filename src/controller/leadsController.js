@@ -658,3 +658,47 @@ export const getLeadsCount = expressAsyncHandler(async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 })
+
+// Get leads where current user is a contributor
+export const getContributingLeads = expressAsyncHandler(async (req, res) => {
+  try {
+    const filter = {
+      contributor: { $in: [req.user._id] }
+    }
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const skip = (page - 1) * limit
+
+    // Apply additional filters from query
+    const queryFilter = buildFilter(req.query)
+    Object.assign(filter, queryFilter)
+
+    const [leads, totalCount] = await Promise.all([
+      Lead.find(filter)
+        .populate('stage', 'stage status')
+        .populate('productRequirement', 'name sku unitPrice category')
+        .populate('assignTo', 'name username email')
+        .populate('contributor', 'name username email')
+        .populate('leadOwner', 'name username email')
+        .populate('campaignId', 'campaignName campaignDescription status')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Lead.countDocuments(filter)
+    ])
+
+    res.status(200).json({
+      leads,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount,
+        limit
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
