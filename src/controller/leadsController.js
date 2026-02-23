@@ -1,5 +1,6 @@
 import expressAsyncHandler from 'express-async-handler'
 import Lead from '../models/Leads.js'
+import { Roles } from '../models/settings/Permission.js'
 import { Product } from '../models/settings/Products.js'
 
 // Helper function to build filter
@@ -666,12 +667,18 @@ export const getLeadsCount = expressAsyncHandler(async (req, res) => {
 // Export leads as CSV (based on getMyLeads filters)
 export const exportMyLeadsCSV = expressAsyncHandler(async (req, res) => {
   try {
+    // check for admin role
+    const role = await Roles.findOne({ _id: req.user._id })
     const filter = {
-      $or: [
+
+    }
+    if (role && role.name === 'Admin') {
+      filter.$or =  [
         { leadOwner: req.user._id },
         { assignTo: req.user._id }
       ]
     }
+
 
     // Pagination
     const page = parseInt(req.query.page) || 1
