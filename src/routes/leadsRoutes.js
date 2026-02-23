@@ -2,6 +2,7 @@ import express from 'express'
 import {
   createLead,
   deleteLead,
+  exportMyLeadsCSV,
   getAssignedLeads,
   getFollowUpLeads,
   getLeadById,
@@ -18,6 +19,7 @@ const router = express.Router()
 router.post('/', authMiddleware, createLead)
 router.get('/', authMiddleware, getLeads)
 router.get('/my-leads', authMiddleware, getMyLeads)
+router.get('/my-leads/export', authMiddleware, exportMyLeadsCSV)
 router.get('/assigned', authMiddleware, getAssignedLeads)
 router.get('/follow-up', authMiddleware, getFollowUpLeads)
 router.get('/count', authMiddleware, getLeadsCount)
