@@ -84,7 +84,9 @@ const buildFilter = (query) => {
       filter.createdAt.$gte = new Date(query.createdAtFrom)
     }
     if (query.createdAtTo) {
-      filter.createdAt.$lte = new Date(query.createdAtTo)
+      const toDate = new Date(query.createdAtTo)
+      toDate.setHours(23, 59, 59, 999)
+      filter.createdAt.$lte = toDate
     }
   }
 
@@ -95,7 +97,9 @@ const buildFilter = (query) => {
       filter.updatedAt.$gte = new Date(query.updatedAtFrom)
     }
     if (query.updatedAtTo) {
-      filter.updatedAt.$lte = new Date(query.updatedAtTo)
+      const toDate = new Date(query.updatedAtTo)
+      toDate.setHours(23, 59, 59, 999)
+      filter.updatedAt.$lte = toDate
     }
   }
 
@@ -654,6 +658,116 @@ export const getLeadsCount = expressAsyncHandler(async (req, res) => {
     const followUpCount = followUpCountResult.length > 0 ? followUpCountResult[0].count : 0
 
     res.status(200).json({ assignedCount, followUpCount })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Export leads as CSV (based on getMyLeads filters)
+export const exportMyLeadsCSV = expressAsyncHandler(async (req, res) => {
+  try {
+    const filter = {
+      $or: [
+        { leadOwner: req.user._id },
+        { assignTo: req.user._id }
+      ]
+    }
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const skip = (page - 1) * limit
+
+    // Apply additional filters from query
+    const queryFilter = buildFilter(req.query)
+    Object.assign(filter, queryFilter)
+
+    const leads = await Lead.find(filter)
+      .populate('stage', 'stage status')
+      .populate('productRequirement', 'name sku unitPrice category')
+      .populate('assignTo', 'name username email')
+      .populate('contributor', 'name username email')
+      .populate('leadOwner', 'name username email')
+      .populate('campaignId', 'campaignName campaignDescription status')
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+
+    // CSV Headers
+    const headers = [
+      'Contact Name',
+      'Mobile',
+      'Company Name',
+      'Location',
+      'District',
+      'City',
+      'Lead Stage',
+      'Product Category',
+      'Product Requirement',
+      'Next Call Date',
+      'Current Status',
+      'Campaign',
+      'Assign To',
+      'Contributors',
+      'Created At'
+    ]
+
+    // Helper function to escape CSV values
+    const escapeCSV = (value) => {
+      if (value === null || value === undefined) {
+        return ''
+      }
+      const str = String(value)
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`
+      }
+      return str
+    }
+
+    // Helper function to format date
+    const formatDate = (date) => {
+      if (!date) {
+        return ''
+      }
+      return new Date(date).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+    }
+
+    // Build CSV rows
+    const rows = leads.map(lead => {
+      const contributors = lead.contributor && lead.contributor.length > 0
+        ? lead.contributor.map(c => c.name || c.username).join('; ')
+        : ''
+
+      return [
+        escapeCSV(lead.contactName),
+        escapeCSV(lead.contactMobile),
+        escapeCSV(lead.companyName),
+        escapeCSV(lead.state),
+        escapeCSV(lead.district),
+        escapeCSV(lead.city),
+        escapeCSV(lead.stage?.stage),
+        escapeCSV(lead.productRequirement?.category),
+        escapeCSV(lead.productRequirement?.name),
+        escapeCSV(formatDate(lead.nextCallDate)),
+        escapeCSV(lead.currentStatus),
+        escapeCSV(lead.campaignId?.campaignName),
+        escapeCSV(lead.assignTo?.name || lead.assignTo?.username),
+        escapeCSV(contributors),
+        escapeCSV(formatDate(lead.createdAt))
+      ].join(',')
+    })
+
+    // Combine headers and rows
+    const csvContent = [headers.join(','), ...rows].join('\n')
+
+    // Set response headers for CSV download
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename="leads-export.csv"')
+    res.status(200).send(csvContent)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
