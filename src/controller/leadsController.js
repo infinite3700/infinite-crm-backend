@@ -4,7 +4,7 @@ import { Roles } from '../models/settings/Permission.js'
 import { Product } from '../models/settings/Products.js'
 
 // Helper function to build filter
-const buildFilter = (query) => {
+const buildFilter = async (query) => {
   const filter = {}
 
   // Filter by company name (partial match, case-insensitive)
@@ -45,6 +45,18 @@ const buildFilter = (query) => {
   // Filter by product requirement
   if (query.productRequirement) {
     filter.productRequirement = query.productRequirement
+  }
+
+  // Filter by product category
+  if (query.productCategory) {
+    const productsInCategory = await Product.find({ category: query.productCategory }).select('_id')
+    const productIds = productsInCategory.map(p => p._id)
+    if (productIds.length > 0) {
+      filter.productRequirement = { $in: productIds }
+    } else {
+      // No products found in this category, return empty result
+      filter.productRequirement = { $in: [] }
+    }
   }
 
   // Filter by current status
@@ -175,7 +187,7 @@ export const createLead = expressAsyncHandler(async (req, res) => {
 // Get all leads with filters
 export const getLeads = expressAsyncHandler(async (req, res) => {
   try {
-    const filter = buildFilter(req.query)
+    const filter = await buildFilter(req.query)
 
     // Pagination
     const page = parseInt(req.query.page) || 1
@@ -351,7 +363,7 @@ export const getMyLeads = expressAsyncHandler(async (req, res) => {
     const skip = (page - 1) * limit
 
     // Apply additional filters from query
-    const queryFilter = buildFilter(req.query)
+    const queryFilter = await buildFilter(req.query)
     Object.assign(filter, queryFilter)
 
     const [leads, totalCount] = await Promise.all([
@@ -388,7 +400,7 @@ export const getAssignedLeads = expressAsyncHandler(async (req, res) => {
     const filter = { assignTo: req.user._id }
 
     // Apply additional filters from query
-    const queryFilter = buildFilter(req.query)
+    const queryFilter = await buildFilter(req.query)
     Object.assign(filter, queryFilter)
 
     // Pagination
@@ -436,7 +448,7 @@ export const getFollowUpLeads = expressAsyncHandler(async (req, res) => {
     }
 
     // Apply additional filters from query
-    const queryFilter = buildFilter(req.query)
+    const queryFilter = await buildFilter(req.query)
     Object.assign(filter, queryFilter)
 
     // Pagination
@@ -677,7 +689,7 @@ export const getContributingLeads = expressAsyncHandler(async (req, res) => {
     const skip = (page - 1) * limit
 
     // Apply additional filters from query
-    const queryFilter = buildFilter(req.query)
+    const queryFilter = await buildFilter(req.query)
     Object.assign(filter, queryFilter)
 
     const [leads, totalCount] = await Promise.all([
@@ -723,25 +735,25 @@ export const exportMyLeadsCSV = expressAsyncHandler(async (req, res) => {
       ]
     }
 
-    // Pagination
-    const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.limit) || 10
-    const skip = (page - 1) * limit
-
     // Apply additional filters from query
-    const queryFilter = buildFilter(req.query)
+    const queryFilter = await buildFilter(req.query)
     Object.assign(filter, queryFilter)
 
     const leads = await Lead.find(filter)
       .populate('stage', 'stage status')
-      .populate('productRequirement', 'name sku unitPrice category')
+      .populate({
+        path: 'productRequirement',
+        select: 'name sku unitPrice category',
+        populate: {
+          path: 'category',
+          select: 'category'
+        }
+      })
       .populate('assignTo', 'name username email')
       .populate('contributor', 'name username email')
       .populate('leadOwner', 'name username email')
       .populate('campaignId', 'campaignName campaignDescription status')
       .sort({ updatedAt: -1 })
-      .skip(skip)
-      .limit(limit)
 
     // CSV Headers
     const headers = [
@@ -800,7 +812,7 @@ export const exportMyLeadsCSV = expressAsyncHandler(async (req, res) => {
         escapeCSV(lead.district),
         escapeCSV(lead.city),
         escapeCSV(lead.stage?.stage),
-        escapeCSV(lead.productRequirement?.category),
+        escapeCSV(lead.productRequirement?.category?.category),
         escapeCSV(lead.productRequirement?.name),
         escapeCSV(formatDate(lead.nextCallDate)),
         escapeCSV(lead.currentStatus),
