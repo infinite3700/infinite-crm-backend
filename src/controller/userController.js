@@ -20,6 +20,10 @@ export const getUserById = asyncHandler(async (req, res) => {
           model: 'Permission'
         }
       })
+      .populate({
+        path: 'assignedUser',
+        select: '_id name username email mobile'
+      })
 
     if (!user) {
       res.status(404)
@@ -33,6 +37,8 @@ export const getUserById = asyncHandler(async (req, res) => {
       email: user.email,
       mobile: user.mobile,
       joinDate: user.joinDate,
+      optionalUserType: user.optionalUserType,
+      assignedUser: user.assignedUser || [],
       role: {
         _id: user.role._id,
         name: user.role.name,
@@ -61,6 +67,10 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
           model: 'Permission'
         }
       })
+      .populate({
+        path: 'assignedUser',
+        select: '_id name username email mobile'
+      })
     if (!user) {
       res.status(404)
       throw new Error('User not found')
@@ -73,6 +83,8 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       email: user.email,
       mobile: user.mobile,
       joinDate: user.joinDate,
+      optionalUserType: user.optionalUserType,
+      assignedUser: user.assignedUser || [],
       role: {
         _id: user.role._id,
         name: user.role.name,
@@ -93,7 +105,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 export const updateUser = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params
-    const { name, username, email, mobile, role, password } = req.body
+    const { name, username, email, mobile, role, password, optionalUserType } = req.body
 
     const user = await User.findById(id)
     if (!user) {
@@ -142,6 +154,11 @@ export const updateUser = asyncHandler(async (req, res) => {
     }
     if (role) {
       updateData.role = role
+    }
+    if (optionalUserType !== undefined) {
+      if (optionalUserType === null || optionalUserType === 'null' || ['manager', 'franchise'].includes(optionalUserType)) {
+        updateData.optionalUserType = optionalUserType === 'null' ? null : optionalUserType
+      }
     }
 
     // Handle password update
@@ -210,6 +227,10 @@ export const getAllUsers = asyncHandler(async (req, res) => {
         path: 'role',
         select: 'name description'
       })
+      .populate({
+        path: 'assignedUser',
+        select: '_id name username email mobile'
+      })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 })
@@ -224,6 +245,8 @@ export const getAllUsers = asyncHandler(async (req, res) => {
         email: user.email,
         mobile: user.mobile,
         joinDate: user.joinDate,
+        optionalUserType: user.optionalUserType,
+        assignedUser: user.assignedUser || [],
         role: {
           _id: user.role._id,
           name: user.role.name,
@@ -239,6 +262,151 @@ export const getAllUsers = asyncHandler(async (req, res) => {
         hasNextPage: page < Math.ceil(total / limit),
         hasPrevPage: page > 1
       }
+    })
+  } catch (error) {
+    throw new Error(error.message)
+  }
+})
+
+// @desc    Get users by optionalUserType and role filter
+// @route   GET /api/users/filter
+// @access  Private
+export const getUsersByFilter = asyncHandler(async (req, res) => {
+  try {
+    const { page = 1, limit = 100, optionalUserType, role, search } = req.query
+
+    // Build filter query
+    const query = {}
+
+    // Filter by optionalUserType
+    if (optionalUserType !== undefined) {
+      if (optionalUserType === 'null' || optionalUserType === '') {
+        query.optionalUserType = null
+      } else if (['manager', 'franchise'].includes(optionalUserType)) {
+        query.optionalUserType = optionalUserType
+      }
+    }
+
+    // Filter by role
+    if (role) {
+      query.role = role
+    }
+
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { username: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { mobile: { $regex: search, $options: 'i' } }
+      ]
+    }
+
+    const users = await User.find(query)
+      .select('-password')
+      .populate({
+        path: 'role',
+        select: 'name description'
+      })
+      .populate({
+        path: 'assignedUser',
+        select: '_id name username email mobile'
+      })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: -1 })
+
+    const total = await User.countDocuments(query)
+
+    res.status(200).json({
+      users: users.map(user => ({
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        mobile: user.mobile,
+        joinDate: user.joinDate,
+        optionalUserType: user.optionalUserType,
+        assignedUser: user.assignedUser || [],
+        role: {
+          _id: user.role._id,
+          name: user.role.name,
+          description: user.role.description
+        },
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      })),
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalUsers: total,
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1
+      }
+    })
+  } catch (error) {
+    throw new Error(error.message)
+  }
+})
+
+// @desc    Assign users to a user
+// @route   POST /api/users/:id/assign
+// @access  Private
+export const assignUsersToUser = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params
+    const { userIds } = req.body
+
+    if (!userIds || !Array.isArray(userIds)) {
+      res.status(400)
+      throw new Error('userIds must be an array of user IDs')
+    }
+
+    const user = await User.findById(id)
+    if (!user) {
+      res.status(404)
+      throw new Error('User not found')
+    }
+
+    // Validate that all userIds exist
+    const validUsers = await User.find({ _id: { $in: userIds } })
+    if (validUsers.length !== userIds.length) {
+      res.status(400)
+      throw new Error('One or more user IDs are invalid')
+    }
+
+    // Update the user's assignedUser array
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { assignedUser: userIds },
+      { new: true, runValidators: true }
+    )
+      .select('-password')
+      .populate({
+        path: 'role',
+        select: 'name description'
+      })
+      .populate({
+        path: 'assignedUser',
+        select: '_id name username email mobile'
+      })
+
+    res.status(200).json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      mobile: updatedUser.mobile,
+      joinDate: updatedUser.joinDate,
+      optionalUserType: updatedUser.optionalUserType,
+      assignedUser: updatedUser.assignedUser || [],
+      role: {
+        _id: updatedUser.role._id,
+        name: updatedUser.role.name,
+        description: updatedUser.role.description
+      },
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt
     })
   } catch (error) {
     throw new Error(error.message)
