@@ -1,9 +1,11 @@
 import express from 'express'
 import {
+  assignUsersToUser,
   deleteUser,
   getAllUsers,
   getCurrentUser,
   getUserById,
+  getUsersByFilter,
   updateUser
 } from '../controller/userController.js'
 import authMiddleware from '../middleware/authMiddleware.js'
@@ -18,6 +20,10 @@ router.get('/', authMiddleware, getAllUsers)
 // GET /api/users/profile
 router.get('/profile', authMiddleware, getCurrentUser)
 
+// Get users by optionalUserType and role filter
+// GET /api/users/filter?optionalUserType=manager|franchise|null&role=roleId
+router.get('/filter', authMiddleware, getUsersByFilter)
+
 // Get user by ID
 // GET /api/users/:id
 router.get('/:id', authMiddleware, getUserById)
@@ -25,6 +31,10 @@ router.get('/:id', authMiddleware, getUserById)
 // Update user
 // PUT /api/users/:id
 router.put('/:id', authMiddleware, updateUser)
+
+// Assign users to a user
+// POST /api/users/:id/assign
+router.post('/:id/assign', authMiddleware, assignUsersToUser)
 
 // Delete user
 // DELETE /api/users/:id

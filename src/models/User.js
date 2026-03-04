@@ -33,7 +33,16 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
     required: true
-  }
+  },
+  optionalUserType: {
+    type: String,
+    enum: ['manager', 'franchise', null],
+    default: null
+  },
+  assignedUser: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 }, { timestamps: true })
 
 export default mongoose.model('User', userSchema)
