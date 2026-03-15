@@ -28,7 +28,7 @@ export const sendOneSignalNotification = async (externalUserId, title, message, 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Key ${ONESIGNAL_REST_API_KEY}`
+        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
       },
       body: JSON.stringify(payload)
     })
@@ -76,7 +76,7 @@ export const sendOneSignalToAll = async (title, message, data = {}) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Key ${ONESIGNAL_REST_API_KEY}`
+        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
       },
       body: JSON.stringify(payload)
     })
