@@ -1,6 +1,8 @@
 import expressAsyncHandler from 'express-async-handler'
 import Lead from '../models/Leads.js'
 import User from '../models/User.js'
+import { sendOneSignalToAll } from '../common/onesignal.js'
+import LeadStage from '../models/settings/LeadStage.js'
 import { Roles } from '../models/settings/Permission.js'
 import { Product } from '../models/settings/Products.js'
 
@@ -325,6 +327,18 @@ export const updateLead = expressAsyncHandler(async (req, res) => {
       { path: 'leadOwner', select: 'name username email' },
       { path: 'campaignId', select: 'campaignName campaignDescription status' }
     ])
+
+    // Send OneSignal notification to all app users when stage is updated to 'won'
+    if (stage !== undefined && stage) {
+      const leadStage = await LeadStage.findById(stage)
+      if (leadStage && /^won$/i.test(leadStage.stage)) {
+        sendOneSignalToAll(
+          'Lead Won! 🎉',
+          `The lead "${updatedLead.contactName || updatedLead.companyName || 'Unknown'}" has been marked as Won.`,
+          { type: 'lead_won', leadId: updatedLead._id.toString() }
+        ).catch(err => console.error('OneSignal lead won notification error:', err.message))
+      }
+    }
 
     res.status(200).json(updatedLead)
   } catch (error) {
