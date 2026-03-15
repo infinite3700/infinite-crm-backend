@@ -472,7 +472,9 @@ paths:
       tags:
         - Authentication
       summary: Login user
-      description: Authenticate user and receive JWT token
+      description: |
+        Authenticate user and receive JWT token.
+        On successful login, a OneSignal push notification is sent to the user if their `optionalUserType` is not `franchise`.
       requestBody:
         required: true
         content:
