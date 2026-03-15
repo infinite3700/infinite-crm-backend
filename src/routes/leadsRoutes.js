@@ -5,6 +5,7 @@ import {
   exportMyLeadsCSV,
   getAssignedLeads,
   getContributingLeads,
+  getCurrentUserLeads,
   getFollowUpLeads,
   getLeadById,
   getLeads,
@@ -23,6 +24,7 @@ router.get('/my-leads', authMiddleware, getMyLeads)
 router.get('/my-leads/export', authMiddleware, exportMyLeadsCSV)
 router.get('/assigned', authMiddleware, getAssignedLeads)
 router.get('/contributing', authMiddleware, getContributingLeads)
+router.get('/current-user-leads', authMiddleware, getCurrentUserLeads)
 router.get('/follow-up', authMiddleware, getFollowUpLeads)
 router.get('/count', authMiddleware, getLeadsCount)
 router.get('/:id', authMiddleware, getLeadById)

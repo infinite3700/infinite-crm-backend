@@ -1,5 +1,6 @@
 import expressAsyncHandler from 'express-async-handler'
 import Lead from '../models/Leads.js'
+import User from '../models/User.js'
 import { Roles } from '../models/settings/Permission.js'
 import { Product } from '../models/settings/Products.js'
 
@@ -691,6 +692,70 @@ export const getContributingLeads = expressAsyncHandler(async (req, res) => {
     // Apply additional filters from query
     const queryFilter = await buildFilter(req.query)
     Object.assign(filter, queryFilter)
+
+    const [leads, totalCount] = await Promise.all([
+      Lead.find(filter)
+        .populate('stage', 'stage status')
+        .populate('productRequirement', 'name sku unitPrice category')
+        .populate('assignTo', 'name username email')
+        .populate('contributor', 'name username email')
+        .populate('leadOwner', 'name username email')
+        .populate('campaignId', 'campaignName campaignDescription status')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Lead.countDocuments(filter)
+    ])
+
+    res.status(200).json({
+      leads,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount,
+        limit
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get leads for current user's assigned users
+export const getCurrentUserLeads = expressAsyncHandler(async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user._id).select('assignedUser')
+
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    const assignedUserIds = currentUser.assignedUser || []
+
+    if (assignedUserIds.length === 0) {
+      return res.status(200).json({
+        leads: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalCount: 0,
+          limit: parseInt(req.query.limit) || 10
+        }
+      })
+    }
+
+    const filter = {
+      assignTo: { $in: assignedUserIds }
+    }
+
+    // Apply additional filters from query
+    const queryFilter = await buildFilter(req.query)
+    Object.assign(filter, queryFilter)
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const skip = (page - 1) * limit
 
     const [leads, totalCount] = await Promise.all([
       Lead.find(filter)
